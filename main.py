@@ -1,30 +1,51 @@
-import os
+from datetime import datetime
+import time
 import requests
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
-load_dotenv()
+from github import GithubAPI
+from config import settings
 
-URL = "https://www.dyson.com.tr/dyson-v15-detect-absolute"
-SELECTOR = "hero__pricing__sold-out"
 
-while True:
-    response = requests.get(URL)
+WAIT_SECONDS = 60 * 1  # every minute
+MAX_RUN_TIME = 60 * 60 * 5  # 5 hours
+START_TIME = time.time()
+
+
+def check():
+    url = "https://www.dyson.com.tr/dyson-v15-detect-absolute"
+    selector = "hero__pricing__sold-out"
+    response = requests.get(url)
+    found = False
 
     if response.status_code == 200:
         soup = BeautifulSoup(response.content, features='html.parser')
-        element = soup.find(attrs={"class": SELECTOR})
+        element = soup.find(attrs={"class": selector})
+        print(f'Checking ... {datetime.now()}')
 
         if not element:
-            # Send thee push notification via Pushover
+            # Sending the push notification to my phone via Pushover
             url = "https://api.pushover.net/1/messages.json"
-            token = os.getenv("PUSHOVER_TOKEN")
-            user = os.getenv("PUSHOVER_USER")
-            message = "In stock!"
-            payload = f"token={token}&user={user}&message={message}"
+            message = "Dyson in stock ✅ Hurry up, buy it!"
+            payload = f"token={settings.PUSHOVER_TOKEN}&user={settings.PUSHOVER_USER}&message={message}"
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded"
             }
             requests.request("POST", url, headers=headers, data=payload)
+            found = True
 
-            # Stop
+    return found
+
+
+def stop_worker() -> bool:
+    return (time.time() - START_TIME) > MAX_RUN_TIME
+
+
+if __name__ == '__main__':
+    while True:
+        check()
+
+        time.sleep(WAIT_SECONDS)
+
+        if stop_worker():
+            GithubAPI().workflow_dispatch()
             break
