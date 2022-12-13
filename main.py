@@ -42,7 +42,10 @@ def stop_worker() -> bool:
 
 if __name__ == '__main__':
     while True:
-        check()
+        found = check()
+
+        if found:
+            break
 
         time.sleep(WAIT_SECONDS)
 
