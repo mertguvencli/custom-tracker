@@ -25,7 +25,7 @@ def check():
         if not element:
             # Sending the push notification to my phone via Pushover
             url = "https://api.pushover.net/1/messages.json"
-            message = "Dyson in stock ✅ Hurry up, buy it!"
+            message = "Dyson in stock! Hurry up, buy it!"
             payload = f"token={settings.PUSHOVER_TOKEN}&user={settings.PUSHOVER_USER}&message={message}"
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded"
@@ -42,7 +42,12 @@ def stop_worker() -> bool:
 
 if __name__ == '__main__':
     while True:
-        found = check()
+        found = False
+
+        try:
+            found = check()
+        except Exception as ex:
+            print(ex)
 
         if found:
             break
